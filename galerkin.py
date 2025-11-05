@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sparse
 import sympy as sp
@@ -39,7 +38,7 @@ class FunctionSpace(ABC):
     @property
     def reference_domain(self):
         # Assume the reference domain is (-1,1)
-        return (-1,1)
+        return (-1, 1)
 
     @property
     def domain_factor(self):
@@ -121,7 +120,7 @@ class Legendre(FunctionSpace):
 
     def L2_norm_sq(self, N):
         # Return the squared L2 norm of the basis function
-        return np.array([ 2/(2*j+1) for j in range(N) ])
+        return np.array([2 / (2 * j + 1) for j in range(N)])
 
     def mass_matrix(self):
         return sparse.diags(
@@ -150,7 +149,7 @@ class Chebyshev(FunctionSpace):
         return 1 / sp.sqrt(1 - x**2)
 
     def L2_norm_sq(self, N):
-        return np.array([ (2. if j == 0 else 1.) * np.pi*.5 for j in range(N) ])
+        return np.array([(2.0 if j == 0 else 1.0) * np.pi * 0.5 for j in range(N)])
 
     def mass_matrix(self):
         return assemble_generic_matrix(TrialFunction(self), TestFunction(self))
@@ -231,9 +230,8 @@ class Cosines(Trigonometric):
             return sp.cos(j * sp.pi * x)
         return lambda Xj: np.cos(j * np.pi * Xj)
 
-
     def derivative_basis_function(self, j, k=1):
-        scale = (j * np.pi) ** k * {0: 1, 1: -1}[((k+1) // 2) % 2]
+        scale = (j * np.pi) ** k * {0: 1, 1: -1}[((k + 1) // 2) % 2]
         if k % 2 == 0:
             return lambda Xj: scale * np.cos(j * np.pi * Xj)
         else:
@@ -241,7 +239,7 @@ class Cosines(Trigonometric):
 
     def L2_norm_sq(self, N):
         res = np.ones((N,))
-        res[1:] *= .5
+        res[1:] *= 0.5
         return res
 
 
@@ -338,12 +336,19 @@ class NeumannLegendre(Composite, Legendre):
     def __init__(self, N, domain=(-1, 1), bc=(0, 0), constraint=0):
         Legendre.__init__(self, N, domain=domain)
         self.B = Neumann(bc, domain, self.reference_domain)
-        self.S = sparse.diags((1, np.array([ - (j*(j+1))/((j+2)*(j+3)) for j in range(N + 1)])), (0, 2), shape=(N + 1, N + 3), format="csr")
+        self.S = sparse.diags(
+            (1, np.array([-(j * (j + 1)) / ((j + 2) * (j + 3)) for j in range(N + 1)])),
+            (0, 2),
+            shape=(N + 1, N + 3),
+            format="csr",
+        )
 
     def basis_function(self, j, sympy=False):
         if sympy:
-            return sp.legendre(j, x) - (j*(j+1))/((j+2)*(j+3)) * sp.legendre(j + 2, x)
-        return Leg.basis(j) - (j*(j+1))/((j+2)*(j+3)) * Leg.basis(j + 2)
+            return sp.legendre(j, x) - (j * (j + 1)) / (
+                (j + 2) * (j + 3)
+            ) * sp.legendre(j + 2, x)
+        return Leg.basis(j) - (j * (j + 1)) / ((j + 2) * (j + 3)) * Leg.basis(j + 2)
 
 
 class DirichletChebyshev(Composite, Chebyshev):
@@ -362,12 +367,19 @@ class NeumannChebyshev(Composite, Chebyshev):
     def __init__(self, N, domain=(-1, 1), bc=(0, 0), constraint=0):
         Chebyshev.__init__(self, N, domain=domain)
         self.B = Neumann(bc, domain, self.reference_domain)
-        self.S = sparse.diags((1, [ -(j/(j+2))**2 for j in range(N+1) ]), (0, 2), shape=(N + 1, N + 3), format="csr")
+        self.S = sparse.diags(
+            (1, [-((j / (j + 2)) ** 2) for j in range(N + 1)]),
+            (0, 2),
+            shape=(N + 1, N + 3),
+            format="csr",
+        )
 
     def basis_function(self, j, sympy=False):
         if sympy:
-            return sp.cos(j * sp.acos(x)) - (j/(j+2))**2 * sp.cos((j + 2) * sp.acos(x))
-        return Cheb.basis(j) - (j/(j+2))**2 * Cheb.basis(j + 2)
+            return sp.cos(j * sp.acos(x)) - (j / (j + 2)) ** 2 * sp.cos(
+                (j + 2) * sp.acos(x)
+            )
+        return Cheb.basis(j) - (j / (j + 2)) ** 2 * Cheb.basis(j + 2)
 
 
 class BasisFunction:
@@ -393,7 +405,8 @@ class BasisFunction:
 
 
 class TestFunction(BasisFunction):
-    __test__ = False # Tell pytest that this is not part of the test suite
+    __test__ = False  # Tell pytest that this is not part of the test suite
+
     def __init__(self, V, diff=0):
         BasisFunction.__init__(self, V, diff=diff, argument=0)
 
